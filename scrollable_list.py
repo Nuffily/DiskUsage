@@ -1,8 +1,10 @@
 import collections
 import curses
 import os
+import string
 from curses import wrapper
 from datetime import datetime
+from importlib.metadata import files
 from typing import NamedTuple, List
 
 
@@ -11,9 +13,6 @@ class MyFile(NamedTuple):
     modified: int
     size: int
     is_dir: bool
-
-    def set_size(self, size: int):
-        self.size = size
 
 
 class ScrollableList:
@@ -26,6 +25,7 @@ class ScrollableList:
         self.setup_curses()
         self.stack = collections.deque[List[MyFile]]()
         self.title = path
+        self.sort_filter = "По расширению"
 
     def next_dir(self, path):
         self.top_idx = 0
@@ -66,10 +66,11 @@ class ScrollableList:
         self.stdscr.clear()
 
         # Заголовок
-        title = "-" * 4 + self.title[:self.screen_width - 1] + "-" * (self.screen_width - 4 - len(self.title[:self.screen_width - 1]))
+        title = "-" * 4 + self.title[:self.screen_width - 1] + "-" * (
+                    self.screen_width - 4 - len(self.title[:self.screen_width - 1]))
         self.stdscr.addstr(0, 0, title, curses.A_BOLD)
         self.stdscr.addstr(self.screen_height - 1, 0,
-                           "↑/↓: прокрутка, Enter: перейти, U: вычислить занимаемое место, S: Сортировка, Q: назад"[
+                           f"↑/↓: прокрутка, Enter: перейти, U: вычислить занимаемое место, S: Сортировка, C: сменить сортировку (сейчас - {self.sort_filter}), Q: назад"[
                            :self.screen_width - 1])
         self.title = self.path
         # Список элементов
@@ -104,7 +105,10 @@ class ScrollableList:
                 self.move_selection(self.visible_rows)
             elif key == ord("u"):  # Page Down
                 self.scan()
-
+            elif key == ord("s"):  # Page Down
+                self.sort()
+            elif key == ord("c"):  # Page Down
+                self.change_sort()
             elif key == 10:  # Enter
                 self.select_item()
             elif key == ord('q') or key == ord('й'):  # ESC
@@ -148,16 +152,36 @@ class ScrollableList:
         size = (str(current.size) if current.size else "-")
         is_dir = "Да" if current.is_dir else "Нет"
 
-        # return current["name"] + " | " + current["modified"].strftime('%Y-%m-%d %H:%M:%S') + " | " + current[
-        #     "size"] + " | " + str(current["is_dir"])
         return name + " | " + modified + " | " + size + " | " + is_dir
 
+    def change_sort(self):
+        if self.sort_filter == "По расширению":
+            self.sort_filter = "По времени последнего изменения"
+        elif self.sort_filter == "По времени последнего изменения":
+            self.sort_filter = "По размеру"
+        elif self.sort_filter == "По размеру":
+            self.sort_filter = "По количеству файлов"
+        elif self.sort_filter == "По количеству файлов":
+            self.sort_filter = "По расширению"
+
+    def sort(self):
+        if self.sort_filter == "По расширению":
+            self.files = sorted(self.files, key=lambda x: os.path.splitext(x.name)[1])
+        elif self.sort_filter == "По времени последнего изменения":
+            self.files = sorted(self.files, key=lambda x: x.modified)
+        elif self.sort_filter == "По размеру":
+            self.files = sorted(self.files, key=lambda x: -x.size)
+        elif self.sort_filter == "По количеству файлов":
+            self.files = sorted(self.files, key=lambda x: -get_kolvo(self.path + "/" + x.name))
 
     def scan(self):
         self.progress = 0
         self.total_size = 0
         self.file_count = 0
         self.skipped_files = 0
+        self.stdscr.addstr(1, 0, "Начальный подсчет...")
+        self.stdscr.refresh()
+
 
         total_files = 0
         for root, dirs, files in os.walk(self.path):
@@ -197,8 +221,6 @@ class ScrollableList:
 
         for i in range(len(self.files)):
 
-            # f.size = self._calculate_size(self.path + "/" + f.name, total_files)
-
             if not self.files[i].is_dir:
                 self.files[i] = MyFile(
                     name=self.files[i].name,
@@ -210,28 +232,11 @@ class ScrollableList:
             else:
 
                 self.files[i] = MyFile(
-                name=self.files[i].name,
-                is_dir=self.files[i].is_dir,
-                modified=self.files[i].modified,
-                size=self._calculate_size(self.path + "/" + self.files[i].name, total_files)
-            )
-
-        # self._calculate_size(self.path, total_files)
-
-        # title = "ne"
-        # if len(self.files):
-        #     self.files[0] = MyFile(
-        #         name = self.files[0].name,
-        #         is_dir = self.files[0].is_dir,
-        #         modified = self.files[0].modified,
-        #         size = 123
-        #     )
-        # self.stdscr.addstr(0, 0, title, curses.A_BOLD)
-        # self.progress = 1
-        # self.draw_bar()
-        # self.stdscr.refresh()
-        # self.stdscr.getch()
-
+                    name=self.files[i].name,
+                    is_dir=self.files[i].is_dir,
+                    modified=self.files[i].modified,
+                    size=self._calculate_size(self.path + "/" + self.files[i].name, total_files)
+                )
 
     def draw_bar(self):
         bar_width = self.screen_width // 4 - 4
@@ -242,21 +247,33 @@ class ScrollableList:
         self.stdscr.refresh()
 
 
+def get_kolvo(path):
+    total_files = 0
+    for root, dirs, files in os.walk(path):
+        try:
+            total_files += len(files)
+        except PermissionError:
+            continue
+    return total_files
+
 
 def to_papkas(stdscr, path: str):
+
+
+
     files = [
         MyFile(
             name=f,
             size=0,
             modified=int(os.path.getmtime(path + "/" + f)),
-            is_dir=os.path.isdir(path + "/" + f))
+            is_dir=os.path.isdir(path + "/" + f),
+        )  # Получаем владельца файла
         for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) | os.path.isdir(os.path.join(path, f))]
 
     app = ScrollableList(stdscr, files, path)
     app.run()
 
-
-if __name__ == "__main__":
-    print("Листаемый список - используйте стрелки для навигации")
-    wrapper(to_papkas, 'C:/users/max/desktop')
-    print("Работа со списком завершена")
+# if __name__ == "__main__":
+#     print("Листаемый список - используйте стрелки для навигации")
+#     wrapper(to_papkas, 'C:/users/max')
+#     print("Работа со списком завершена")

@@ -1,4 +1,5 @@
 import curses
+import string
 from datetime import datetime
 import os
 
@@ -37,7 +38,8 @@ def main(stdscr):
             if current == len(options) - 1:
                 break
             if current == len(options) - 3:
-                to_papkas(stdscr, 'C:/users/max/desktop')
+                to_disk(stdscr)
+                # to_papkas(stdscr, 'C:/')
             if current == len(options) - 2:
                 info(stdscr)
 
@@ -45,6 +47,42 @@ def main(stdscr):
             break
         elif key == ord("й"):  # ESC
             break
+
+def to_disk(stdscr):
+    disks = [d for d in string.ascii_uppercase if os.path.exists(f"{d}:\\")]
+    current = 0
+
+    while True:
+        stdscr.clear()
+        h, w = stdscr.getmaxyx()
+
+        # Заголовок
+        stdscr.addstr(0, w // 8, "DiskUsage. Меню", curses.A_BOLD)
+
+        # Пункты меню
+        for i, opt in enumerate(disks):
+            x = 0
+            y = h // 2 - len(disks) // 2 + i
+            prefix = "> " if i == current else "  "
+            attr = curses.A_REVERSE if i == current else curses.A_NORMAL
+            stdscr.addstr(y, x, f"{prefix}{opt}", attr)
+
+        # Подсказка
+        stdscr.addstr(h - 1, 0, "↑/↓: выбор • Enter: подтвердить • Q: выход")
+
+        key = stdscr.getch()
+        if key == curses.KEY_UP:
+            current = max(0, current - 1)
+        elif key == curses.KEY_DOWN:
+            current = min(len(disks) - 1, current + 1)
+        elif key == 10:  # Enter
+            to_papkas(stdscr, disks[current] + ':/')
+
+        elif key == ord("q"):  # ESC
+            break
+        elif key == ord("й"):  # ESC
+            break
+
 
 def info(stdscr):
     curses.curs_set(0)  # Скрываем курсор
