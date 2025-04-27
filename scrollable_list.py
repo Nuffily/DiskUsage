@@ -38,7 +38,8 @@ class ScrollableList:
             size=0,
             modified=int(os.path.getmtime(path + "/" + f)),
             is_dir=os.path.isdir(path + "/" + f))
-            for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) | os.path.isdir(os.path.join(path, f))]
+            for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) | os.path.isdir(os.path.join(path, f))
+                                         and not os.path.islink(os.path.join(path, f))]
 
     def back_dir(self):
         self.top_idx = 0
@@ -67,7 +68,7 @@ class ScrollableList:
 
         # Заголовок
         title = "-" * 4 + self.title[:self.screen_width - 1] + "-" * (
-                    self.screen_width - 4 - len(self.title[:self.screen_width - 1]))
+                self.screen_width - 4 - len(self.title[:self.screen_width - 1]))
         self.stdscr.addstr(0, 0, title, curses.A_BOLD)
         self.stdscr.addstr(self.screen_height - 1, 0,
                            f"↑/↓: прокрутка, Enter: перейти, U: вычислить занимаемое место, S: Сортировка, C: сменить сортировку (сейчас - {self.sort_filter}), Q: назад"[
@@ -149,7 +150,7 @@ class ScrollableList:
                 current.name[:37] + "..."))
         modified = datetime.fromtimestamp(current.modified).strftime(
             '%Y-%m-%d %H:%M:%S')
-        size = (str(current.size) if current.size else "-")
+        size = (str(current.size) if current.size != 0 else "-")
         is_dir = "Да" if current.is_dir else "Нет"
 
         return name + " | " + modified + " | " + size + " | " + is_dir
@@ -182,7 +183,6 @@ class ScrollableList:
         self.stdscr.addstr(1, 0, "Начальный подсчет...")
         self.stdscr.refresh()
 
-
         total_files = 0
         for root, dirs, files in os.walk(self.path):
             try:
@@ -200,6 +200,10 @@ class ScrollableList:
             with os.scandir(path) as it:
                 for entry in it:
                     try:
+
+                        if entry.is_symlink():
+                            continue
+
                         if entry.is_file():
                             self.total_size += entry.stat().st_size
                             self.file_count += 1
@@ -220,6 +224,9 @@ class ScrollableList:
     def obxod(self, total_files):
 
         for i in range(len(self.files)):
+
+            if os.path.islink(self.path + "/" + self.files[i].name):
+                continue
 
             if not self.files[i].is_dir:
                 self.files[i] = MyFile(
@@ -258,9 +265,6 @@ def get_kolvo(path):
 
 
 def to_papkas(stdscr, path: str):
-
-
-
     files = [
         MyFile(
             name=f,
@@ -268,7 +272,8 @@ def to_papkas(stdscr, path: str):
             modified=int(os.path.getmtime(path + "/" + f)),
             is_dir=os.path.isdir(path + "/" + f),
         )  # Получаем владельца файла
-        for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) | os.path.isdir(os.path.join(path, f))]
+        for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) | os.path.isdir(os.path.join(path, f))
+                                     and not os.path.islink(os.path.join(path, f))]
 
     app = ScrollableList(stdscr, files, path)
     app.run()

@@ -7,48 +7,46 @@ from scrollable_list import to_papkas
 
 
 def main(stdscr):
-    curses.curs_set(0)  # Скрываем курсор
+    curses.curs_set(0)
     options = ["К дискам", "Информация", "Выход"]
     current = 0
 
     while True:
         stdscr.clear()
-        h, w = stdscr.getmaxyx()
+        height, width = stdscr.getmaxyx()
 
-        # Заголовок
-        stdscr.addstr(0, w // 8, "DiskUsage. Меню", curses.A_BOLD)
+        stdscr.addstr(0, width // 8, "DiskUsage. Меню", curses.A_BOLD)
+        stdscr.addstr(height - 1, 0, "↑/↓: выбор • Enter: подтвердить • Q: выход")
 
-        # Пункты меню
         for i, opt in enumerate(options):
             x = 0
-            y = h // 2 - len(options) // 2 + i
+            y = height // 2 - len(options) // 2 + i
             prefix = "> " if i == current else "  "
             attr = curses.A_REVERSE if i == current else curses.A_NORMAL
             stdscr.addstr(y, x, f"{prefix}{opt}", attr)
 
-        # Подсказка
-        stdscr.addstr(h - 1, 0, "↑/↓: выбор • Enter: подтвердить • Q: выход")
-
         key = stdscr.getch()
+
         if key == curses.KEY_UP:
             current = max(0, current - 1)
         elif key == curses.KEY_DOWN:
             current = min(len(options) - 1, current + 1)
-        elif key == 10:  # Enter
-            if current == len(options) - 1:
-                break
-            if current == len(options) - 3:
-                to_disk(stdscr)
-                # to_papkas(stdscr, 'C:/')
-            if current == len(options) - 2:
-                info(stdscr)
 
-        elif key == ord("q"):  # ESC
+        elif key == 10:  # Enter
+            if current == 0:    # К дискам
+                to_disk(stdscr)
+            if current == 1:    # Информация
+                info(stdscr)
+            if current == 2:    # Выход
+                break
+
+        elif key == ord("q"):  # Выход
             break
-        elif key == ord("й"):  # ESC
+        elif key == ord("й"): # Выход
             break
 
 def to_disk(stdscr):
+
     disks = [d for d in string.ascii_uppercase if os.path.exists(f"{d}:\\")]
     current = 0
 
