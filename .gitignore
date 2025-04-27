@@ -1,0 +1,15 @@
+.venv/
+venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+.coverage
+dist/
+build/
+*.egg-info/
+*.py[cod]
+.idea
+idea
+cache
+saved_data
+*.pickle
