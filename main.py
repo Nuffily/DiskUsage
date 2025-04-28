@@ -1,14 +1,10 @@
 import curses
-import string
-from datetime import datetime
-import os
-from typing import List
 
 import _curses
 
-from disk_pick_menu import DiskPickMenu
-from info_menu import InfoMenu
-from scrollable_list import to_papkas
+from disk_usage.disk_pick_menu import DiskPickMenu
+from disk_usage.info_menu import InfoMenu
+
 
 class MainMenu:
     """Основное окно программы"""
@@ -28,7 +24,7 @@ class MainMenu:
             height, width = self._stdscr.getmaxyx()
 
             self._stdscr.addstr(0, width // 8, "DiskUsage. Меню", curses.A_BOLD)
-            self._stdscr.addstr(height - 1, 0, "↑/↓: выбор • Enter: подтвердить • Q: выход")
+            self._stdscr.addstr(height - 1, 0, "Enter: подтвердить • Q: выход")
 
             self._create_list(height)
 
