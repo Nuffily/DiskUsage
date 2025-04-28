@@ -33,9 +33,9 @@ class DiskMenu:
 
     def _setup_curses(self) -> None:
         """Настраивает curses"""
-        curses.curs_set(0)  # Скрыть курсор
+        curses.curs_set(0)
         curses.use_default_colors()
-        self._stdscr.keypad(True)  # Включить обработку специальных клавиш
+        self._stdscr.keypad(True)
         self._update_window_size()
 
     def _update_window_size(self) -> None:
@@ -140,6 +140,10 @@ class DiskMenu:
         self._title = path
 
     def _back_dir(self) -> bool:
+        """
+        Возвращается в старую папку, доставая верхушку из стека
+        Если стек пустой, возвращает False
+        """
         self._top_idx = 0
         self._selected_idx = 0
 

@@ -18,6 +18,7 @@ class MainMenu:
         self._disk_menu = DiskPickMenu(stdscr)
 
         curses.curs_set(0)
+        curses.use_default_colors()
 
         while True:
             self._stdscr.clear()

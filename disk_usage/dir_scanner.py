@@ -70,6 +70,7 @@ class Scanner:
 
     @lru_cache(maxsize=1024)
     def get_files_amount(self, path: str) -> int:
+        """Возвращает количество файлов в директории по поданному path. Кэшируется"""
         total_files = 0
         for root, dirs, files in os.walk(path):
             try:

@@ -24,17 +24,18 @@ class DiskPickMenu:
         if os.name == "posix":
             DiskMenu(self._stdscr, '/').go_to()
 
-        while True:
-            self._stdscr.clear()
-            height, width = self._stdscr.getmaxyx()
+        else:
+            while True:
+                self._stdscr.clear()
+                height, width = self._stdscr.getmaxyx()
 
-            self._stdscr.addstr(0, width // 8, "DiskUsage. Выберите диск", curses.A_BOLD)
-            self._stdscr.addstr(height - 1, 0, "Enter: подтвердить • Q: назад")
+                self._stdscr.addstr(0, width // 8, "DiskUsage. Выберите диск", curses.A_BOLD)
+                self._stdscr.addstr(height - 1, 0, "Enter: подтвердить • Q: назад")
 
-            self._create_list(height)
+                self._create_list(height)
 
-            if not self._handle_input():
-                break
+                if not self._handle_input():
+                    break
 
     def _handle_input(self) -> bool:
         """
