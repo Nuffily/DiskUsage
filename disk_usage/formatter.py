@@ -1,25 +1,25 @@
 from datetime import datetime
 
-from disk_usage.shared_models import FileEntry, DirEntry, SortFilter
+from disk_usage.shared_models import DirEntry, FileEntry, SortFilter
 
 
 class Formatter:
     """Класс для форматирования строк для DiskMenu"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._MEGABYTE = 1048576
         self._GIGABYTE = 1073741824
         self._KILOBYTE = 1024
 
-    def get_title(self, title: str, width: int):
-        """Возвращает строку с текущим путем и забитую знаками '-' """
-        return "-" * 4 + title[:width - 1] + "-" * (width - 4 - len(title[:width - 1]))
+    def get_title(self, title: str, width: int) -> str:
+        """Возвращает строку с текущим путем и забитую знаками '-'"""
+        return "-" * 4 + title[: width - 1] + "-" * (width - 4 - len(title[: width - 1]))
 
     def get_time(self, file: FileEntry) -> str:
         """Возвращает строку формата %Y-%m-%d %H:%M:%S из поля file.modified"""
         return datetime.fromtimestamp(file.modified).strftime('%Y-%m-%d %H:%M:%S')
 
-    def get_legend(self):
+    def get_legend(self) -> str:
         """Возвращает строку для наименования столбцов таблицы DiskMenu"""
         return "  Имя файла" + " " * 34 + "Дата изменения" + " " * 8 + "Папка" + " " * 3 + "Размер"
 
@@ -27,10 +27,12 @@ class Formatter:
         """Возвращает строку имени файла для таблицы DiskMenu"""
         return name + (40 - len(name)) * " " if len(name) < 40 else (name[:37] + "...")
 
-    def get_list_hint(self, sort_filter: SortFilter):
+    def get_list_hint(self, sort_filter: SortFilter) -> str:
         """Возвращает строку с подсказками управления DiskMenu"""
-        return (f"Enter: перейти • U: вычислить занимаемое место • S: Сортировка • "
-                f"C: сменить сортировку (сейчас - {self.get_sort_filter(sort_filter)}) • Q: назад")
+        return (
+            f"Enter: перейти • U: вычислить занимаемое место • S: Сортировка • "
+            f"C: сменить сортировку (сейчас - {self.get_sort_filter(sort_filter)}) • Q: назад"
+        )
 
     def get_size(self, file: FileEntry) -> str:
         """Возвращает отформатированную строку размера файла для таблицы DiskMenu"""
@@ -40,18 +42,18 @@ class Formatter:
             return "-"
 
         elif size >= self._GIGABYTE:
-            size = f"{(size / self._GIGABYTE):.2f} Gb"
+            size_str = f"{(size / self._GIGABYTE):.2f} Gb"
 
         elif size >= self._MEGABYTE:
-            size = f"{(size / self._MEGABYTE):.2f} Mb"
+            size_str = f"{(size / self._MEGABYTE):.2f} Mb"
 
         elif size >= self._KILOBYTE:
-            size = f"{(size / self._KILOBYTE):.2f} Kb"
+            size_str = f"{(size / self._KILOBYTE):.2f} Kb"
 
         else:
-            size = f"{size} b"
+            size_str = f"{size} b"
 
-        return size + " " * (10 - len(size))
+        return size_str + " " * (10 - len(size_str))
 
     def get_bar(self, directory_size: int, current_size: int) -> str:
         """Возвращает отформатированную полосу занимаемого места в папке файлом для таблицы DiskMenu"""

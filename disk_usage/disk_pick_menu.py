@@ -1,7 +1,8 @@
 import curses
 import os
 import string
-from typing import List
+
+import _curses
 
 from disk_usage.disk_menu import DiskMenu
 
@@ -9,7 +10,7 @@ from disk_usage.disk_menu import DiskMenu
 class DiskPickMenu:
     """Меню выбора диска"""
 
-    def __init__(self, stdscr) -> None:
+    def __init__(self, stdscr: _curses.window) -> None:
         self._stdscr = stdscr
         self._disks = [d for d in string.ascii_uppercase if os.path.exists(f"{d}:\\")]
         self._current = 0
@@ -53,7 +54,7 @@ class DiskPickMenu:
 
         return True
 
-    def _create_list(self, height: int):
+    def _create_list(self, height: int) -> None:
         """Создает список листаемых опций из disks"""
         for i, opt in enumerate(self._disks):
             x = 0

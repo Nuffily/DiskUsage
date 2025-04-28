@@ -65,5 +65,6 @@ class MainMenu:
             attr = curses.A_REVERSE if i == self._current else curses.A_NORMAL
             self._stdscr.addstr(y, x, f"{prefix}{opt}", attr)
 
+
 if __name__ == "__main__":
     curses.wrapper(MainMenu)

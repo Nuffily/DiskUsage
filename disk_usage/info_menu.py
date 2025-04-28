@@ -1,9 +1,12 @@
 import curses
 
+import _curses
+
 
 class InfoMenu:
     """Информационное меню"""
-    def __init__(self, stdscr):
+
+    def __init__(self, stdscr: _curses.window):
         self.stdscr = stdscr
 
     def go_to(self) -> None:

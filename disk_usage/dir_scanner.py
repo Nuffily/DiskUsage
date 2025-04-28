@@ -10,7 +10,7 @@ class Scanner:
 
     def __init__(self, draw_bar_func: Callable[[float], None]):
         """С помощью draw_bar_func будет отображаться прогресс подсчета"""
-        self.progress = 0
+        self.progress: float = 0
         self.total_size = 0
         self.checked_count = 0
         self.skipped_count = 0
@@ -63,13 +63,13 @@ class Scanner:
                 continue
 
             if not current.is_dir:
-                current.size =  os.path.getsize(path + "/" + current.name)
+                current.size = os.path.getsize(path + "/" + current.name)
 
             else:
                 current.size = self._calculate_size(path + "/" + current.name, total_files)
 
     @lru_cache(maxsize=1024)
-    def get_files_amount(self, path):
+    def get_files_amount(self, path: str) -> int:
         total_files = 0
         for root, dirs, files in os.walk(path):
             try:
