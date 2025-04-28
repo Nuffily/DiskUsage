@@ -2,105 +2,72 @@ import curses
 import string
 from datetime import datetime
 import os
+from typing import List
 
+import _curses
+
+from disk_pick_menu import DiskPickMenu
+from info_menu import InfoMenu
 from scrollable_list import to_papkas
 
+class MainMenu:
+    """Основное окно программы"""
 
-def main(stdscr):
-    curses.curs_set(0)
-    options = ["К дискам", "Информация", "Выход"]
-    current = 0
+    def __init__(self, stdscr: _curses.window):
+        """Основной цикл программы"""
+        self._options = ["К дискам", "Информация", "Выход"]
+        self._current = 0
+        self._stdscr = stdscr
+        self._info_menu = InfoMenu(stdscr)
+        self._disk_menu = DiskPickMenu(stdscr)
 
-    while True:
-        stdscr.clear()
-        height, width = stdscr.getmaxyx()
+        curses.curs_set(0)
 
-        stdscr.addstr(0, width // 8, "DiskUsage. Меню", curses.A_BOLD)
-        stdscr.addstr(height - 1, 0, "↑/↓: выбор • Enter: подтвердить • Q: выход")
+        while True:
+            self._stdscr.clear()
+            height, width = self._stdscr.getmaxyx()
 
-        for i, opt in enumerate(options):
-            x = 0
-            y = height // 2 - len(options) // 2 + i
-            prefix = "> " if i == current else "  "
-            attr = curses.A_REVERSE if i == current else curses.A_NORMAL
-            stdscr.addstr(y, x, f"{prefix}{opt}", attr)
+            self._stdscr.addstr(0, width // 8, "DiskUsage. Меню", curses.A_BOLD)
+            self._stdscr.addstr(height - 1, 0, "↑/↓: выбор • Enter: подтвердить • Q: выход")
 
-        key = stdscr.getch()
+            self._create_list(height)
 
-        if key == curses.KEY_UP:
-            current = max(0, current - 1)
-        elif key == curses.KEY_DOWN:
-            current = min(len(options) - 1, current + 1)
-
-        elif key == 10:  # Enter
-            if current == 0:    # К дискам
-                to_disk(stdscr)
-            if current == 1:    # Информация
-                info(stdscr)
-            if current == 2:    # Выход
+            if not self._handle_input():
                 break
 
-        elif key == ord("q"):  # Выход
-            break
-        elif key == ord("й"): # Выход
-            break
+    def _handle_input(self) -> bool:
+        """
+        Принимает нажатие клавиши, позволяет листать список
+        Возвращает False, если была нажата клавиша приводящая в окончанию программы
+        """
+        key = self._stdscr.getch()
 
-def to_disk(stdscr):
-
-    disks = [d for d in string.ascii_uppercase if os.path.exists(f"{d}:\\")]
-    current = 0
-
-    while True:
-        stdscr.clear()
-        h, w = stdscr.getmaxyx()
-
-        # Заголовок
-        stdscr.addstr(0, w // 8, "DiskUsage. Меню", curses.A_BOLD)
-
-        # Пункты меню
-        for i, opt in enumerate(disks):
-            x = 0
-            y = h // 2 - len(disks) // 2 + i
-            prefix = "> " if i == current else "  "
-            attr = curses.A_REVERSE if i == current else curses.A_NORMAL
-            stdscr.addstr(y, x, f"{prefix}{opt}", attr)
-
-        # Подсказка
-        stdscr.addstr(h - 1, 0, "↑/↓: выбор • Enter: подтвердить • Q: выход")
-
-        key = stdscr.getch()
         if key == curses.KEY_UP:
-            current = max(0, current - 1)
+            self._current = max(0, self._current - 1)
         elif key == curses.KEY_DOWN:
-            current = min(len(disks) - 1, current + 1)
+            self._current = min(len(self._options) - 1, self._current + 1)
+
         elif key == 10:  # Enter
-            to_papkas(stdscr, disks[current] + ':/')
+            if self._current == 0:  # К дискам
+                self._disk_menu.go_to()
+            if self._current == 1:  # Информация
+                self._info_menu.go_to()
+            if self._current == 2:  # Выход
+                return False
 
-        elif key == ord("q"):  # ESC
-            break
-        elif key == ord("й"):  # ESC
-            break
+        elif key in (ord("q"), ord("й"), ord("Q"), ord("Й")):  # Выход
+            return False
 
+        return True
 
-def info(stdscr):
-    curses.curs_set(0)  # Скрываем курсор
-    while True:
-        stdscr.clear()
-        h, w = stdscr.getmaxyx()
+    def _create_list(self, height: int) -> None:
+        """Создает список листаемых опций из options"""
+        for i, opt in enumerate(self._options):
+            x = 0
+            y = height // 2 - len(self._options) // 2 + i
+            prefix = "> " if i == self._current else "  "
+            attr = curses.A_REVERSE if i == self._current else curses.A_NORMAL
+            self._stdscr.addstr(y, x, f"{prefix}{opt}", attr)
 
-        stdscr.addstr(0, w // 8, "DiskUsage. Меню", curses.A_BOLD)
-
-        stdscr.addstr(2, 0, "Это программа, позволяющая посмотреть занимаемое место на диске")
-        stdscr.addstr(4, 0, "Показывает, что есть и сколько занимает памяти в любой папке")
-        stdscr.addstr(5, 0, "Разумеется, содержимое папок можно сортировать")
-        stdscr.addstr(7, 0, "Сделано на матмехе")
-
-        stdscr.addstr(h - 1, 0, "Q: выход")
-
-        key = stdscr.getch()
-        if key == ord("q"):  # ESC
-            break
-        elif key == ord("й"):  # ESC
-            break
-
-curses.wrapper(main)
+if __name__ == "__main__":
+    curses.wrapper(MainMenu)
