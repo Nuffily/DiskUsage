@@ -3,7 +3,7 @@ import os
 import string
 from typing import List
 
-from disk_menu import DiskMenu
+from disk_usage.disk_menu import DiskMenu
 
 
 class DiskPickMenu:

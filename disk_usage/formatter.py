@@ -1,15 +1,19 @@
 from datetime import datetime
 
-from shared_models import FileEntry, DirEntry, SortFilter
+from disk_usage.shared_models import FileEntry, DirEntry, SortFilter
 
 
 class Formatter:
     """Класс для форматирования строк для DiskMenu"""
 
     def __init__(self):
-        self.MEGABYTE = 1048576
-        self.GIGABYTE = 1073741824
-        self.KILOBYTE = 1024
+        self._MEGABYTE = 1048576
+        self._GIGABYTE = 1073741824
+        self._KILOBYTE = 1024
+
+    def get_title(self, title: str, width: int):
+        """Возвращает строку с текущим путем и забитую знаками '-' """
+        return "-" * 4 + title[:width - 1] + "-" * (width - 4 - len(title[:width - 1]))
 
     def get_time(self, file: FileEntry) -> str:
         """Возвращает строку формата %Y-%m-%d %H:%M:%S из поля file.modified"""
@@ -35,14 +39,14 @@ class Formatter:
         if not size:
             return "-"
 
-        elif size >= self.GIGABYTE:
-            size = f"{(size / self.GIGABYTE):.2f} Gb"
+        elif size >= self._GIGABYTE:
+            size = f"{(size / self._GIGABYTE):.2f} Gb"
 
-        elif size >= self.MEGABYTE:
-            size = f"{(size / self.MEGABYTE):.2f} Mb"
+        elif size >= self._MEGABYTE:
+            size = f"{(size / self._MEGABYTE):.2f} Mb"
 
-        elif size >= self.KILOBYTE:
-            size = f"{(size / self.KILOBYTE):.2f} Kb"
+        elif size >= self._KILOBYTE:
+            size = f"{(size / self._KILOBYTE):.2f} Kb"
 
         else:
             size = f"{size} b"

@@ -3,93 +3,73 @@ import curses
 import os
 from typing import List
 
-from formatter import Formatter
-from shared_models import FileEntry, DirEntry, SortFilter
-from dir_scanner import Scanner
+from disk_usage.formatter import Formatter
+from disk_usage.shared_models import FileEntry, DirEntry, SortFilter
+from disk_usage.dir_scanner import Scanner
 
 
 class DiskMenu:
+    """
+    Основное меню для просмотра папок на диске
+    Позволяет сортировать содержимое, передвигаться от папки к папке и высчитывать размер файлов
+    """
+
     def __init__(self, stdscr, path):
 
-        self.directory = DirEntry(
+        self._directory = DirEntry(
             path=path,
             size=0,
             file_amount=0,
-            files=self.get_file_entries_from_dir(path)
+            files=self._get_file_entries_from_dir(path)
         )
 
-        self.stdscr = stdscr
-        self.top_idx = 0
-        self.selected_idx = 0
-        self.scanner = Scanner(self.draw_bar)
+        self._stdscr = stdscr
+        self._top_idx = 0
+        self._selected_idx = 0
+        self._scanner = Scanner(self._draw_bar)
 
-        self.setup_curses()
-        self.stack = collections.deque[DirEntry]()
-        self.title = path
-        self.sort_filter = SortFilter.BY_EXTENSION
-        self.formatter = Formatter()
+        self._setup_curses()
+        self._stack = collections.deque[DirEntry]()
+        self._title = path
+        self._sort_filter = SortFilter.BY_EXTENSION
+        self._formatter = Formatter()
 
-    def next_dir(self, path):
-        self.stack.append(self.directory)
-
-        self.directory = DirEntry(
-            path=path,
-            size=0,
-            file_amount=0,
-            files=self.get_file_entries_from_dir(path)
-        )
-
-        self.top_idx = 0
-        self.selected_idx = 0
-
-        self.title = path
-
-    def back_dir(self):
-        self.top_idx = 0
-        self.selected_idx = 0
-
-        if len(self.stack):
-            self.directory = self.stack.pop()
-            self.title = self.directory.path
-            return True
-        else:
-            return False
-
-    def setup_curses(self):
+    def _setup_curses(self):
+        """Настраивает curses"""
         curses.curs_set(0)  # Скрыть курсор
         curses.use_default_colors()
-        self.stdscr.keypad(True)  # Включить обработку специальных клавиш
-        self.update_window_size()
+        self._stdscr.keypad(True)  # Включить обработку специальных клавиш
+        self._update_window_size()
 
-    def update_window_size(self):
-        self.screen_height, self.screen_width = self.stdscr.getmaxyx()
+    def _update_window_size(self):
+        """Обновляет размер окна"""
+        self.screen_height, self.screen_width = self._stdscr.getmaxyx()
         self.visible_rows = self.screen_height - 3
 
-    def draw(self):
-        self.stdscr.clear()
+    def _draw(self):
+        """Перерисовывает окно"""
+        self._stdscr.clear()
 
-        title = "-" * 4 + self.title[:self.screen_width - 1] + "-" * (
-                self.screen_width - 4 - len(self.title[:self.screen_width - 1]))
-        self.stdscr.addstr(0, 0, title, curses.A_BOLD)
-        self.stdscr.addstr(self.screen_height - 1, 0,
-                           self.formatter.get_list_hint(self.sort_filter))
-        self.stdscr.addstr(1, 0,
-                           self.formatter.get_legend())
-        self.title = self.directory.path
+        self._stdscr.addstr(0, 0, self._formatter.get_title(self._title, self.screen_width), curses.A_BOLD)
+        self._stdscr.addstr(self.screen_height - 1, 0,
+                            self._formatter.get_list_hint(self._sort_filter))
+        self._stdscr.addstr(1, 0,
+                            self._formatter.get_legend())
+        self._title = self._directory.path
 
-        for i in range(self.visible_rows):
-            item_idx = self.top_idx + i
-            if item_idx >= len(self.directory.files):
+        for index in range(self.visible_rows):
+            item_idx = self._top_idx + index
+            if item_idx >= len(self._directory.files):
                 break
 
-            prefix = "> " if item_idx == self.selected_idx else "  "
-            item_text = prefix + self.formatter.entry_to_str(self.directory, item_idx)
-            attr = curses.A_REVERSE if item_idx == self.selected_idx else curses.A_NORMAL
-            self.stdscr.addstr(i + 2, 0, item_text[:self.screen_width - 1], attr)
+            prefix = "> " if item_idx == self._selected_idx else "  "
+            item_text = prefix + self._formatter.entry_to_str(self._directory, item_idx)
+            attr = curses.A_REVERSE if item_idx == self._selected_idx else curses.A_NORMAL
+            self._stdscr.addstr(index + 2, 0, item_text[:self.screen_width - 1], attr)
 
-        self.stdscr.refresh()
+        self._stdscr.refresh()
 
-    def handle_input(self):
+    def _handle_input(self):
         """
         Принимает ввод:
         U - для сканирования размера файлов
@@ -100,114 +80,138 @@ class DiskMenu:
         """
 
         try:
-            key = self.stdscr.getch()
+            key = self._stdscr.getch()
 
             if key == curses.KEY_UP:
-                self.move_selection(-1)
+                self._move_selection(-1)
             elif key == curses.KEY_DOWN:
-                self.move_selection(1)
+                self._move_selection(1)
             elif key == curses.KEY_PPAGE:
-                self.move_selection(-self.visible_rows)
+                self._move_selection(-self.visible_rows)
             elif key == curses.KEY_HOME:
-                self.move_selection(-9999)
+                self._move_selection(-9999)
             elif key == curses.KEY_END:
-                self.move_selection(9999)
+                self._move_selection(9999)
             elif key == curses.KEY_NPAGE:
-                self.move_selection(self.visible_rows)
+                self._move_selection(self.visible_rows)
             elif key == ord("u"):
-                self.scan()
+                self._scan()
             elif key == ord("s"):
-                self.sort()
+                self._sort()
             elif key == ord("c"):
-                self.change_sort()
+                self._change_sort()
             elif key == 10:  # Enter
-                self.select_file()
+                self._select_file()
             elif key == ord('q') or key == ord('й'):
-                return self.back_dir()
+                return self._back_dir()
             return True
         except:
             return True
 
-    def move_selection(self, delta):
+    def _move_selection(self, delta):
         """Двигает список в зависимости от выбранного элемента"""
 
-        new_idx = max(0, min(self.selected_idx + delta, len(self.directory.files) - 1))
-        if new_idx != self.selected_idx:
-            self.selected_idx = new_idx
+        new_idx = max(0, min(self._selected_idx + delta, len(self._directory.files) - 1))
+        if new_idx != self._selected_idx:
+            self._selected_idx = new_idx
 
-            if self.selected_idx < self.top_idx:
-                self.top_idx = self.selected_idx
+            if self._selected_idx < self._top_idx:
+                self._top_idx = self._selected_idx
 
-            elif self.selected_idx >= self.top_idx + self.visible_rows:
-                self.top_idx = self.selected_idx - self.visible_rows + 1
+            elif self._selected_idx >= self._top_idx + self.visible_rows:
+                self._top_idx = self._selected_idx - self.visible_rows + 1
 
-    def select_file(self):
+    def _select_file(self):
         """Переходит по выбранной папке, если это не папка, просто выписывает это в title"""
 
-        if self.directory.files[self.selected_idx].is_dir:
-            path = self.directory.path + "/" + self.directory.files[self.selected_idx].name
-            self.next_dir(path)
+        if self._directory.files[self._selected_idx].is_dir:
+            path = self._directory.path + "/" + self._directory.files[self._selected_idx].name
+            self._next_dir(path)
 
-            if self.directory.path != path:
-                self.stack.pop()
+            if self._directory.path != path:
+                self._stack.pop()
         else:
-            self.title = "Передвигаться можно только по папкам"
+            self._title = "Передвигаться можно только по папкам"
 
-    def go_to(self):
-        """Запускает окно"""
-        while True:
-            self.update_window_size()
-            self.draw()
-            if not self.handle_input():
-                break
+    def _next_dir(self, path):
+        """Проходит в следующую папку, сохраняя текущую в стек. Ничего не происходит, если такой папки нет"""
+        self._stack.append(self._directory)
 
-    def change_sort(self):
-        if self.sort_filter == SortFilter.BY_EXTENSION:
-            self.sort_filter = SortFilter.BY_MODIFIED
-        elif self.sort_filter == SortFilter.BY_MODIFIED:
-            self.sort_filter = SortFilter.BY_SIZE
-        elif self.sort_filter == SortFilter.BY_SIZE:
-            self.sort_filter =SortFilter.BY_COUNT
-        elif self.sort_filter == SortFilter.BY_COUNT:
-            self.sort_filter = SortFilter.BY_EXTENSION
+        self._directory = DirEntry(
+            path=path,
+            size=0,
+            file_amount=0,
+            files=self._get_file_entries_from_dir(path)
+        )
 
-    def sort(self):
-        if self.sort_filter == SortFilter.BY_EXTENSION:
-            self.directory.files = sorted(self.directory.files, key=lambda x: os.path.splitext(x.name)[1])
-        elif self.sort_filter == SortFilter.BY_MODIFIED:
-            self.directory.files = sorted(self.directory.files, key=lambda x: x.modified)
-        elif self.sort_filter == SortFilter.BY_SIZE:
-            self.directory.files = sorted(self.directory.files, key=lambda x: -x.size)
-        elif self.sort_filter == SortFilter.BY_COUNT:
-            self.directory.files = (sorted(self.directory.files,
-                                           key=lambda x: -self.scanner.get_files_amount(
-                                               self.directory.path + "/" + x.name)))
+        self._top_idx = 0
+        self._selected_idx = 0
 
-    def scan(self):
-        self.stdscr.addstr(1, 0, "Начальный подсчет...")
-        self.stdscr.refresh()
+        self._title = path
 
-        if self.directory.file_amount == 0:
-            self.directory.file_amount = self.scanner.get_files_amount(self.directory.path)
+    def _back_dir(self):
+        self._top_idx = 0
+        self._selected_idx = 0
 
-        total_files = self.directory.file_amount
+        if len(self._stack):
+            self._directory = self._stack.pop()
+            self._title = self._directory.path
+            return True
+        else:
+            return False
 
-        self.scanner.start_calculation(total_files, self.directory.files, self.directory.path)
+    def _change_sort(self):
+        """Меняет текущий self.sort_filter чередованием"""
+        if self._sort_filter == SortFilter.BY_EXTENSION:
+            self._sort_filter = SortFilter.BY_MODIFIED
+        elif self._sort_filter == SortFilter.BY_MODIFIED:
+            self._sort_filter = SortFilter.BY_SIZE
+        elif self._sort_filter == SortFilter.BY_SIZE:
+            self._sort_filter = SortFilter.BY_COUNT
+        elif self._sort_filter == SortFilter.BY_COUNT:
+            self._sort_filter = SortFilter.BY_EXTENSION
 
-        if not self.directory.size:
-            for f in self.directory.files:
-                self.directory.size += f.size
+    def _sort(self):
+        """Сортирует файлы в текущей директории в зависимости от текущего фильтра self.sort_filter"""
+        if self._sort_filter == SortFilter.BY_EXTENSION:
+            self._directory.files = sorted(self._directory.files, key=lambda x: os.path.splitext(x.name)[1])
+        elif self._sort_filter == SortFilter.BY_MODIFIED:
+            self._directory.files = sorted(self._directory.files, key=lambda x: x.modified)
+        elif self._sort_filter == SortFilter.BY_SIZE:
+            self._directory.files = sorted(self._directory.files, key=lambda x: -x.size)
+        elif self._sort_filter == SortFilter.BY_COUNT:
+            self._directory.files = (sorted(self._directory.files,
+                                            key=lambda x: -self._scanner.get_files_amount(
+                                                self._directory.path + "/" + x.name)))
 
-    def draw_bar(self, progress: float) -> None:
+    def _scan(self):
+        """Находит размер всех файлов в текущей директории с помощью self.scanner, создавая прогресс бар"""
+        self._stdscr.addstr(1, 0, "Начальный подсчет...")
+        self._stdscr.refresh()
+
+        if self._directory.file_amount == 0:
+            self._directory.file_amount = self._scanner.get_files_amount(self._directory.path)
+
+        total_files = self._directory.file_amount
+
+        self._scanner.start_calculation(total_files, self._directory.files, self._directory.path)
+
+        if not self._directory.size:
+            for f in self._directory.files:
+                self._directory.size += f.size
+
+    def _draw_bar(self, progress: float) -> None:
+        """Создает прогресс бар, зарисованный на progress * 100 %"""
         bar_width = self.screen_width // 4 - 4
         filled = int(progress * bar_width)
 
         progress_bar = "[" + "#" * filled + " " * (bar_width - filled) + "] " + str(
             int(progress * 100)) + " %"
-        self.stdscr.addstr(1, 0, progress_bar)
-        self.stdscr.refresh()
+        self._stdscr.addstr(1, 0, progress_bar)
+        self._stdscr.refresh()
 
-    def get_file_entries_from_dir(self, path: str) -> List[FileEntry]:
+    def _get_file_entries_from_dir(self, path: str) -> List[FileEntry]:
+        """Возвращает список FileEntry, лежащий по поданному path"""
         return [FileEntry(
             name=f,
             size=0,
@@ -216,23 +220,11 @@ class DiskMenu:
         )
             for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)) | os.path.isdir(os.path.join(path, f))
                                          and not os.path.islink(os.path.join(path, f))]
-# def get_kolvo(path):
-#     total_files = 0
-#     for root, dirs, files in os.walk(path):
-#         try:
-#             total_files += len(files)
-#         except PermissionError:
-#             continue
-#     return total_files
 
-
-# def to_papkas(stdscr, path: str):
-#     directory = DirEntry(
-#         path=path,
-#         size=0,
-#         file_amount=0,
-#         files=get_file_entries_from_dir(path)
-#     )
-#
-#     app = DiskMenu(stdscr, path)
-#     app.go_to()
+    def go_to(self):
+        """Запускает окно"""
+        while True:
+            self._update_window_size()
+            self._draw()
+            if not self._handle_input():
+                break

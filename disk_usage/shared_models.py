@@ -1,6 +1,6 @@
 from enum import Enum
-from typing import NamedTuple, List
-import pydantic
+from typing import List
+
 from pydantic import BaseModel
 
 
@@ -10,11 +10,13 @@ class FileEntry(BaseModel):
     size: int
     is_dir: bool
 
+
 class DirEntry(BaseModel):
     path: str
     files: List[FileEntry]
     size: int
     file_amount: int
+
 
 class SortFilter(Enum):
     BY_EXTENSION = 0

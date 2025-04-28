@@ -2,7 +2,7 @@ import os
 from functools import lru_cache
 from typing import Callable, List
 
-from shared_models import FileEntry
+from disk_usage.shared_models import FileEntry
 
 
 class Scanner:
