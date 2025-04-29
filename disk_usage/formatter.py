@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from disk_usage.shared_models import DirEntry, FileEntry, SortFilter
+from disk_usage.shared_models import DirEntry, FileEntry
 
 
 class Formatter:
@@ -27,11 +27,11 @@ class Formatter:
         """Возвращает строку имени файла для таблицы DiskMenu"""
         return name + (40 - len(name)) * " " if len(name) < 40 else (name[:37] + "...")
 
-    def get_list_hint(self, sort_filter: SortFilter) -> str:
+    def get_list_hint(self, sort_filter: str) -> str:
         """Возвращает строку с подсказками управления DiskMenu"""
         return (
             f"Enter: перейти • U: вычислить занимаемое место • S: Сортировка • "
-            f"C: сменить сортировку (сейчас - {self.get_sort_filter(sort_filter)}) • Q: назад"
+            f"C: сменить сортировку (сейчас - {sort_filter}) • Q: назад"
         )
 
     def get_size(self, file: FileEntry) -> str:
@@ -73,15 +73,4 @@ class Formatter:
         is_dir = "Да " if current.is_dir else "Нет"
         bar = self.get_bar(directory.size, current.size)
 
-        return name + " | " + modified + " | " + is_dir + "   | " + size + bar
-
-    def get_sort_filter(self, sort_filter: SortFilter) -> str:
-        """Возвращает строку соответствующую значению Енама"""
-        if sort_filter == SortFilter.BY_EXTENSION:
-            return "По расширению"
-        elif sort_filter == SortFilter.BY_SIZE:
-            return "По размеру"
-        elif sort_filter == SortFilter.BY_MODIFIED:
-            return "По времени изменения"
-        elif sort_filter == SortFilter.BY_COUNT:
-            return "По количеству файлов"
+        return f"{name} | {modified} | {is_dir}   | {size}{bar}"

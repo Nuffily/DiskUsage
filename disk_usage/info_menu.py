@@ -2,6 +2,8 @@ import curses
 
 import _curses
 
+from disk_usage.shared_models import CursesKeys
+
 
 class InfoMenu:
     """Информационное меню"""
@@ -24,7 +26,7 @@ class InfoMenu:
 
             self.stdscr.addstr(height - 1, 0, "Q: выход")
 
-            key = self.stdscr.getch()
+            key = CursesKeys.get(self.stdscr.getch())
 
-            if key in (ord("q"), ord("й"), ord("Q"), ord("Й")):  # Выход
+            if key == CursesKeys.QUIT:
                 break

@@ -1,10 +1,12 @@
 import curses
 import os
 import string
+from pathlib import Path
 
 import _curses
 
 from disk_usage.disk_menu import DiskMenu
+from disk_usage.shared_models import CursesKeys
 
 
 class DiskPickMenu:
@@ -12,7 +14,7 @@ class DiskPickMenu:
 
     def __init__(self, stdscr: _curses.window) -> None:
         self._stdscr = stdscr
-        self._disks = [d for d in string.ascii_uppercase if os.path.exists(f"{d}:\\")]
+        self._disks = [d for d in string.ascii_uppercase if Path(f"{d}:/").exists()]
         self._current = 0
 
     def go_to(self) -> None:
@@ -23,19 +25,19 @@ class DiskPickMenu:
 
         if os.name == "posix":
             DiskMenu(self._stdscr, '/').go_to()
+            return
 
-        else:
-            while True:
-                self._stdscr.clear()
-                height, width = self._stdscr.getmaxyx()
+        while True:
+            self._stdscr.clear()
+            height, width = self._stdscr.getmaxyx()
 
-                self._stdscr.addstr(0, width // 8, "DiskUsage. Выберите диск", curses.A_BOLD)
-                self._stdscr.addstr(height - 1, 0, "Enter: подтвердить • Q: назад")
+            self._stdscr.addstr(0, width // 8, "DiskUsage. Выберите диск", curses.A_BOLD)
+            self._stdscr.addstr(height - 1, 0, "Enter: подтвердить • Q: назад")
 
-                self._create_list(height)
+            self._create_list(height)
 
-                if not self._handle_input():
-                    break
+            if not self._handle_input():
+                break
 
     def _handle_input(self) -> bool:
         """
@@ -44,14 +46,15 @@ class DiskPickMenu:
         """
         key = self._stdscr.getch()
 
-        if key == curses.KEY_UP:
-            self._current = max(0, self._current - 1)
-        elif key == curses.KEY_DOWN:
-            self._current = min(len(self._disks) - 1, self._current + 1)
-        elif key == 10:  # Enter
-            DiskMenu(self._stdscr, self._disks[self._current] + ':/').go_to()
-        elif key in (ord("q"), ord("й"), ord("Q"), ord("Й")):  # Выход
-            return False
+        match CursesKeys.get(key):
+            case CursesKeys.UP:
+                self._current = max(0, self._current - 1)
+            case CursesKeys.DOWN:
+                self._current = min(len(self._disks) - 1, self._current + 1)
+            case CursesKeys.ENTER:
+                DiskMenu(self._stdscr, self._disks[self._current] + ':/').go_to()
+            case CursesKeys.QUIT:
+                return False
 
         return True
 

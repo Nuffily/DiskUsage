@@ -1,13 +1,13 @@
 import collections
 import curses
-import os
-from typing import List
+from pathlib import Path
 
 import _curses
 
 from disk_usage.dir_scanner import Scanner
 from disk_usage.formatter import Formatter
-from disk_usage.shared_models import DirEntry, FileEntry, SortFilter
+from disk_usage.shared_models import (CursesKeys, DirEntry, FileEntry,
+                                      SortFilter)
 
 
 class DiskMenu:
@@ -48,7 +48,7 @@ class DiskMenu:
         self._stdscr.clear()
 
         self._stdscr.addstr(0, 0, self._formatter.get_title(self._title, self.screen_width), curses.A_BOLD)
-        self._stdscr.addstr(self.screen_height - 1, 0, self._formatter.get_list_hint(self._sort_filter))
+        self._stdscr.addstr(self.screen_height - 1, 0, self._formatter.get_list_hint(self._sort_filter.value))
         self._stdscr.addstr(1, 0, self._formatter.get_legend())
         self._title = self._directory.path
 
@@ -77,29 +77,33 @@ class DiskMenu:
         try:
             key = self._stdscr.getch()
 
-            if key == curses.KEY_UP:
-                self._move_selection(-1)
-            elif key == curses.KEY_DOWN:
-                self._move_selection(1)
-            elif key == curses.KEY_PPAGE:
-                self._move_selection(-self.visible_rows)
-            elif key == curses.KEY_HOME:
-                self._move_selection(-9999)
-            elif key == curses.KEY_END:
-                self._move_selection(9999)
-            elif key == curses.KEY_NPAGE:
-                self._move_selection(self.visible_rows)
-            elif key == ord("u"):
-                self._scan()
-            elif key == ord("s"):
-                self._sort()
-            elif key == ord("c"):
-                self._change_sort()
-            elif key == 10:  # Enter
-                self._select_file()
-            elif key == ord('q') or key == ord('й'):
-                return self._back_dir()
+            match CursesKeys.get(key):
+                case CursesKeys.UP:
+                    self._move_selection(-1)
+                case CursesKeys.DOWN:
+                    self._move_selection(1)
+                case CursesKeys.PAGE_UP:
+                    self._move_selection(-self.visible_rows)
+                case CursesKeys.PAGE_DOWN:
+                    self._move_selection(self.visible_rows)
+                case CursesKeys.HOME:
+                    self._move_selection(-100)
+                case CursesKeys.END:
+                    self._move_selection(100)
+                case CursesKeys.ENTER:
+                    self._select_file()
+                case CursesKeys.QUIT:
+                    return self._back_dir()
+                case CursesKeys.UPDATE:
+                    self._scan()
+                case CursesKeys.SORT:
+                    self._sort()
+                case CursesKeys.CHANGE_SORT:
+                    self._change_sort()
+                case CursesKeys.UNKNOWN:
+                    pass
             return True
+
         except Exception:
             return True
 
@@ -168,7 +172,7 @@ class DiskMenu:
     def _sort(self) -> None:
         """Сортирует файлы в текущей директории в зависимости от текущего фильтра self.sort_filter"""
         if self._sort_filter == SortFilter.BY_EXTENSION:
-            self._directory.files = sorted(self._directory.files, key=lambda x: os.path.splitext(x.name)[1])
+            self._directory.files = sorted(self._directory.files, key=lambda x: Path(x.name).suffix)
         elif self._sort_filter == SortFilter.BY_MODIFIED:
             self._directory.files = sorted(self._directory.files, key=lambda x: x.modified)
         elif self._sort_filter == SortFilter.BY_SIZE:
@@ -204,18 +208,17 @@ class DiskMenu:
         self._stdscr.addstr(1, 0, progress_bar)
         self._stdscr.refresh()
 
-    def _get_file_entries_from_dir(self, path: str) -> List[FileEntry]:
+    def _get_file_entries_from_dir(self, path: str) -> list[FileEntry]:
         """Возвращает список FileEntry, лежащий по поданному path"""
         return [
             FileEntry(
-                name=f,
+                name=item.name,
                 size=0,
-                modified=int(os.path.getmtime(path + "/" + f)),
-                is_dir=os.path.isdir(path + "/" + f),
+                modified=int(item.stat().st_mtime),
+                is_dir=item.is_dir(),
             )
-            for f in os.listdir(path)
-            if os.path.isfile(os.path.join(path, f)) | os.path.isdir(os.path.join(path, f))
-            and not os.path.islink(os.path.join(path, f))
+            for item in Path(path).iterdir()
+            if (item.is_file() or item.is_dir()) and not item.is_symlink()
         ]
 
     def go_to(self) -> None:

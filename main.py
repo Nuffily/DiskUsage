@@ -4,6 +4,7 @@ import _curses
 
 from disk_usage.disk_pick_menu import DiskPickMenu
 from disk_usage.info_menu import InfoMenu
+from disk_usage.shared_models import CursesKeys
 
 
 class MainMenu:
@@ -39,21 +40,20 @@ class MainMenu:
         """
         key = self._stdscr.getch()
 
-        if key == curses.KEY_UP:
-            self._current = max(0, self._current - 1)
-        elif key == curses.KEY_DOWN:
-            self._current = min(len(self._options) - 1, self._current + 1)
-
-        elif key == 10:  # Enter
-            if self._current == 0:  # К дискам
-                self._disk_menu.go_to()
-            if self._current == 1:  # Информация
-                self._info_menu.go_to()
-            if self._current == 2:  # Выход
+        match CursesKeys.get(key):
+            case CursesKeys.UP:
+                self._current = max(0, self._current - 1)
+            case CursesKeys.DOWN:
+                self._current = min(len(self._options) - 1, self._current + 1)
+            case CursesKeys.ENTER:
+                if self._current == 0:  # К дискам
+                    self._disk_menu.go_to()
+                if self._current == 1:  # Информация
+                    self._info_menu.go_to()
+                if self._current == 2:  # Выход
+                    return False
+            case CursesKeys.QUIT:
                 return False
-
-        elif key in (ord("q"), ord("й"), ord("Q"), ord("Й")):  # Выход
-            return False
 
         return True
 

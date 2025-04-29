@@ -1,7 +1,7 @@
 import pytest
 
 from disk_usage.formatter import Formatter
-from disk_usage.shared_models import FileEntry, SortFilter
+from disk_usage.shared_models import FileEntry
 
 
 class TestFormatter:
@@ -30,15 +30,3 @@ class TestFormatter:
     def test_formatter_get_size(self, input_value: int, expected: str, formatter: Formatter) -> None:
         file_entry = FileEntry(name="test", modified=0, size=input_value, is_dir=False)
         assert formatter.get_size(file_entry) == expected
-
-    @pytest.mark.parametrize(
-        "input_value, expected",
-        [
-            (SortFilter.BY_EXTENSION, "По расширению"),
-            (SortFilter.BY_SIZE, "По размеру"),
-            (SortFilter.BY_MODIFIED, "По времени изменения"),
-            (SortFilter.BY_COUNT, "По количеству файлов"),
-        ],
-    )
-    def test_formatter_get_sort_filter(self, input_value: SortFilter, expected: str, formatter: Formatter) -> None:
-        assert formatter.get_sort_filter(input_value) == expected
