@@ -1,6 +1,6 @@
 [project]
-name = "diskusage"
-version = "0.1.0"
+name = "disk_usage"
+version = "1.0.0"
 description = ""
 authors = [
     {name = "Nuffily",email = "Nuffily@gmail.com"}

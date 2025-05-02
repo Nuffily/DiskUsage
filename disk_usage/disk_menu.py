@@ -100,8 +100,6 @@ class DiskMenu:
                     self._sort()
                 case CursesKeys.CHANGE_SORT:
                     self._change_sort()
-                case CursesKeys.UNKNOWN:
-                    pass
             return True
 
         except Exception:
@@ -193,7 +191,7 @@ class DiskMenu:
 
         total_files = self._directory.file_amount
 
-        self._scanner.start_calculation(total_files, self._directory.files, self._directory.path)
+        self._scanner.start_calculation(total_files, self._directory.files, Path(self._directory.path))
 
         if not self._directory.size:
             for f in self._directory.files:

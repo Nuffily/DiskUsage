@@ -33,7 +33,7 @@ class TestScanner:
             FileEntry(name="subdir", modified=0, size=0, is_dir=True),
         ]
 
-        scanner.start_calculation(3, files, str(tmp_path))
+        scanner.start_calculation(3, files, tmp_path)
 
         assert files[0].size == os.path.getsize(file1)
         assert files[1].size == os.path.getsize(file2)

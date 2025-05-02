@@ -48,7 +48,7 @@ class Scanner:
 
         return self._total_size - current_size
 
-    def start_calculation(self, total_files: int, files: list[FileEntry], path: str) -> None:
+    def start_calculation(self, total_files: int, files: list[FileEntry], path: Path) -> None:
         """
         Вычисляет размер каждого файла в поданной директории и вписывает его в ячейку size файла
         Во время счета обновляет прогресс бар
@@ -60,15 +60,15 @@ class Scanner:
 
         for file in files:
 
-            if (Path(path) / file.name).is_symlink():
+            if (path / file.name).is_symlink():
 
                 continue
 
             if not file.is_dir:
-                file.size = (Path(path) / file.name).stat().st_size
+                file.size = (path / file.name).stat().st_size
 
             else:
-                file.size = self._calculate_size(path + "/" + file.name, total_files)
+                file.size = self._calculate_size(str(path / file.name), total_files)
 
     @lru_cache(maxsize=1024)
     def get_files_amount(self, path: str) -> int:
